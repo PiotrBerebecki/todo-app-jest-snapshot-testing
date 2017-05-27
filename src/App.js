@@ -2,27 +2,65 @@ import React, { Component } from 'react';
 import './App.css';
 import List from './List';
 
-
 export default class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
       term: '',
-      items: []
+      items: [],
     };
   }
 
-  onChange = (event) => {
-    this.setState({ term: event.target.value });
+  componentDidMount() {
+    fetch('https://todo-api-london.now.sh/lists', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        list: {
+          name: 'my list',
+        },
+      }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        this.setState({
+          listId: data.list.id,
+        });
+      });
   }
 
-  onSubmit = (event) => {
+  onChange = event => {
+    this.setState({ term: event.target.value });
+  };
+
+  onSubmit = event => {
     event.preventDefault();
-    this.setState({
-      term: '',
-      items: [...this.state.items, this.state.term]
+    const { listId, term } = this.state;
+    fetch('https://todo-api-london.now.sh/items', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        item: {
+          list_id: listId,
+          description: term,
+        },
+      }),
+    }).then(() => {
+      fetch(`https://todo-api-london.now.sh/lists/${listId}`, {
+        method: 'GET',
+      })
+        .then(res => res.json())
+        .then(data => {
+          this.setState({
+            items: data.list.items.map(({ description }) => description),
+          });
+        });
     });
-  }
+  };
 
   render() {
     return (
